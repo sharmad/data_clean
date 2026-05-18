@@ -1,0 +1,12 @@
+# Secrets
+.env
+
+# Data files
+stocks/data/
+futures/data/
+data/
+
+# misc
+.DS_Store
+
+.claude
