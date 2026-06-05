@@ -88,7 +88,7 @@ if not API_KEY:
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 # Resolve relative to this script's location so it works wherever it's called from.
-SCRIPT_DIR        = Path(__file__).resolve().parent
+SCRIPT_DIR        = Path(__file__).resolve().parent.parent
 POLYGON_DATA_PATH = SCRIPT_DIR / "data" / "polygon"
 RAW_TICKERS_DIR   = POLYGON_DATA_PATH / "raw" / "tickers"
 TMP_DIR           = POLYGON_DATA_PATH / "tmp"
@@ -244,7 +244,7 @@ def download_tickers_for_day(client, day: date) -> pd.DataFrame:
         log.warning("Empty ticker list returned for %s", date_iso)
         return df
 
-    # Keep only CS, ADRC, NYRS, OS – and None/NaN typed tickers which may be
+    # Keep only CS, ADRC, NYRS, OS – and None/NaN typed tickers which may be 
     # mis-labelled common stocks (e.g. AAPL was once labelled None).
     df = df[~df["type"].isin(EXCLUDED_TYPES)]
     df.sort_values("ticker", inplace=True)
@@ -275,6 +275,10 @@ def fetch_missing_raw_tickers(market_days: list[date]) -> None:
     from massive.rest import RESTClient  # type: ignore  (project dependency)
 
     client = RESTClient(api_key=API_KEY)
+
+    log.info(f"Looking for raw tickers in: {RAW_TICKERS_DIR.resolve()}")
+    csv_files = list(RAW_TICKERS_DIR.glob("*.csv"))
+    log.info(f"Found {len(csv_files)} CSV files.")
 
     # Build the set of already-downloaded days as plain datetime.date objects
     existing: set[date] = {
