@@ -139,6 +139,25 @@ NA_VALUES = [
 # 2.  HELPERS
 # =============================================================================
 
+def _to_date(d) -> date:
+    """
+    Normalise anything date-like to a plain datetime.date.
+
+    get_market_dates() from the 'times' module returns pandas Timestamps,
+    while date.fromisoformat() returns datetime.date objects.  Mixing the
+    two in set membership tests always returns False even when the calendar
+    day is identical, causing every day to look 'missing'.  This helper
+    ensures we always compare like with like.
+    """
+    if type(d) is date:              # already a plain date — fast path
+        return d
+    if isinstance(d, date):          # datetime.datetime is a subclass of date
+        return d.date()
+    if hasattr(d, "date"):           # pandas Timestamp, numpy datetime64, …
+        return d.date()
+    return date.fromisoformat(str(d)[:10])   # last resort via string
+
+
 def get_market_dates() -> list[date]:
     """
     Return a sorted list of US market trading days.
@@ -149,7 +168,10 @@ def get_market_dates() -> list[date]:
     """
     try:
         from times import get_market_dates as _get  # type: ignore
-        return _get()
+        # Normalise to plain datetime.date — the 'times' module may return
+        # pandas Timestamps, which break set-membership tests against
+        # date.fromisoformat() results.
+        return [_to_date(d) for d in _get()]
     except ImportError:
         log.warning(
             "'times' module not found – falling back to pandas_market_calendars."
@@ -165,6 +187,7 @@ def get_market_dates() -> list[date]:
         schedule = nyse.schedule(
             start_date=str(START_DATE), end_date=str(END_DATE)
         )
+        # Always return plain datetime.date objects, not Timestamps
         return [d.date() for d in schedule.index]
 
 
@@ -239,16 +262,27 @@ def fetch_missing_raw_tickers(market_days: list[date]) -> None:
     that we don't already have on disk.
 
     This is idempotent – already-downloaded days are skipped.
+
+    Root cause of the original bug
+    --------------------------------
+    get_market_dates() returned pandas Timestamps while date.fromisoformat()
+    returns datetime.date objects.  Comparing them with 'in' / 'not in'
+    always evaluated to False (even for the same calendar day), so every day
+    appeared missing.  All dates are now normalised via _to_date() at the
+    point where get_market_dates() is called, so by the time market_days
+    reaches this function every element is already a plain datetime.date.
     """
     from massive.rest import RESTClient  # type: ignore  (project dependency)
 
     client = RESTClient(api_key=API_KEY)
 
-    existing = {
+    # Build the set of already-downloaded days as plain datetime.date objects
+    existing: set[date] = {
         date.fromisoformat(f.stem)
         for f in RAW_TICKERS_DIR.glob("*.csv")
     }
 
+    # market_days are already plain date objects (normalised in get_market_dates)
     days_to_fetch = [
         d for d in market_days
         if START_DATE <= d <= END_DATE and d not in existing
