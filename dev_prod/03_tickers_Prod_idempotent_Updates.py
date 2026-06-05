@@ -1,5 +1,7 @@
 """
-update_tickers.py
+TO-DO = we still need to verify all this code and fix some errors but the jist of this looks good.  
+
+03_tickers_Prod_Updates.py
 =================
 Production-ready, fully automated version of notebook 03_tickers.ipynb.
 
