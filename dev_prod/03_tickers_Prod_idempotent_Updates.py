@@ -103,8 +103,9 @@ for d in [RAW_TICKERS_DIR, TMP_DIR]:
 # ── Date range ────────────────────────────────────────────────────────────────
 # START_DATE is used only when *no* master CSV exists yet (cold start).
 # END_DATE is always "today" so the cron job is fully automatic.
-START_DATE = date(1999, 1, 1)   # adjust to your Polygon subscription start
-END_DATE   = date.today()
+START_DATE = date(2016, 6, 1) # only go as far as your polygon membership allows. don't waste loop cycles
+END_DATE = date(2026, 6, 15) # till today only or else you will get "out of range" from our custom function and don't waste loop cycles
+# END_DATE   = date.today()
 
 # ── Ticker-type exclusion list (applied at download time) ─────────────────────
 # These types are excluded when fetching from Polygon.
