@@ -40,9 +40,8 @@ def get_tickers(v=4, types=['CS', 'ADRC', 'ETF']):
         tickers["start_data"] = pd.to_datetime(tickers["start_data"]).dt.date
         tickers["end_data"] = pd.to_datetime(tickers["end_data"]).dt.date
 
-    tickers["cik"] = tickers["cik"].apply(
-            lambda str: float(str) if len(str) != 0 else np.nan
-        )
+    # tickers["cik"] = tickers["cik"].apply(lambda str: float(str) if len(str) != 0 else np.nan)
+    tickers["cik"] = pd.to_numeric(tickers["cik"], errors="coerce")
 
     return tickers[tickers['type'].isin(types)]
 
